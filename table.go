@@ -5,16 +5,16 @@ import (
 	"database/sql"
 	"errors"
 	"log"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
+// Table structure
 type Table struct {
 	Name    string
 	Cells   []*Cell
 	CellMap map[string]int
 }
 
+// GetCellIndex gets index for cell name in table definition
 func (t *Table) GetCellIndex(needle string) (int, error) {
 	v, found := t.CellMap[needle]
 	if found {
@@ -24,6 +24,7 @@ func (t *Table) GetCellIndex(needle string) (int, error) {
 	return 0, errors.New("Invalid cell name")
 }
 
+// NewRow creates a row that conforms to the table definition
 func (t *Table) NewRow() *Row {
 	row := new(Row)
 	row.Cells = make([]*Cell, len(t.Cells))
@@ -40,6 +41,7 @@ func (t *Table) NewRow() *Row {
 	return row
 }
 
+// SetCell sets a row's cell by name
 func (t *Table) SetCell(row *Row, needle string, val interface{}) {
 	indx, err := t.GetCellIndex(needle)
 	if err != nil {
@@ -74,6 +76,7 @@ func (t *Table) SetCell(row *Row, needle string, val interface{}) {
 	}
 }
 
+// GetCell gets a row's data by cell name
 func (t *Table) GetCell(row *Row, needle string) (interface{}, error) {
 	indx, err := t.GetCellIndex(needle)
 	if err != nil {
@@ -85,6 +88,7 @@ func (t *Table) GetCell(row *Row, needle string) (interface{}, error) {
 	return cell.GetValue()
 }
 
+// GetRows runs a query and returns a rows structure
 func (t *Table) GetRows(q Query) *Rows {
 	result := new(Rows)
 	fields := make([]string, 0)
@@ -107,7 +111,7 @@ func (t *Table) GetRows(q Query) *Rows {
 
 	err := tmpl.ExecuteTemplate(&b, "select", templateVars)
 	if err != nil {
-		spew.Dump(err)
+		log.Fatal(err)
 	}
 
 	rows, err := db.Query(b.String())
@@ -152,6 +156,7 @@ func (t *Table) GetRows(q Query) *Rows {
 	return result
 }
 
+// Insert inserts into a table
 func (t *Table) Insert(row *Row) {
 	fields := make([]string, 0)
 
@@ -186,7 +191,7 @@ func (t *Table) Insert(row *Row) {
 
 	err := tmpl.ExecuteTemplate(&b, "insert", templateVars)
 	if err != nil {
-		spew.Dump(err)
+		log.Fatal(err)
 	}
 
 	_, err = db.Exec(b.String(), rowData...)

@@ -5,9 +5,10 @@ import (
 	"errors"
 )
 
-// CellType for cells
+// CellType for vague match against SQL types
 type CellType int
 
+// CellType const
 const (
 	CellBool CellType = iota
 	CellString
@@ -15,6 +16,7 @@ const (
 	CellFloat
 )
 
+// Cell type container
 type Cell struct {
 	Name      string
 	SQL       string
@@ -26,6 +28,7 @@ type Cell struct {
 	FloatVal  *sql.NullFloat64
 }
 
+// GetValue from cell
 func (c *Cell) GetValue() (interface{}, error) {
 	switch c.Type {
 	case CellBool:

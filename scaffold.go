@@ -5,9 +5,6 @@ import (
 	"database/sql"
 	"log"
 	"text/template"
-
-	"github.com/davecgh/go-spew/spew"
-	_ "github.com/lib/pq"
 )
 
 var db *sql.DB
@@ -41,11 +38,13 @@ func GetTable(name string) *Table {
 	return nil
 }
 
+// Raw runs a raw query
 func Raw(q string) {
 	db.Exec(q)
 	return
 }
 
+// GetRaw runs a raw query that expects results
 func GetRaw(q string) *Rows {
 	result := new(Rows)
 
@@ -129,7 +128,7 @@ func init() {
 		)
 	`)
 	if err != nil {
-		spew.Dump(err)
+		log.Fatal(err)
 	}
 
 	tmpl, err = tmpl.New("insert").Funcs(funcMap).Parse(`
@@ -147,7 +146,7 @@ func init() {
 		)
 	`)
 	if err != nil {
-		spew.Dump(err)
+		log.Fatal(err)
 	}
 
 	tmpl, err = tmpl.New("select").Funcs(funcMap).Parse(`
@@ -173,7 +172,7 @@ func init() {
 		{{- end -}}
 	`)
 	if err != nil {
-		spew.Dump(err)
+		log.Fatal(err)
 	}
 }
 

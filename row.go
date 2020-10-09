@@ -4,15 +4,18 @@ import (
 	"github.com/tidwall/sjson"
 )
 
+// Row structure containing cells
 type Row struct {
 	Cells []*Cell
 }
 
+// Rows structure that contains an array of rows and the column names
 type Rows struct {
 	Rows []*Row
 	Cols []string
 }
 
+// AsJSON gets row data as json bytes
 func (r *Row) AsJSON() []byte {
 	jsv := []byte("{}")
 
@@ -26,6 +29,7 @@ func (r *Row) AsJSON() []byte {
 	return jsv
 }
 
+// AsJSON gets rows data as json bytes
 func (r *Rows) AsJSON() []byte {
 	jsv := []byte("{\"records\":[]}")
 
