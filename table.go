@@ -73,6 +73,9 @@ func (t *Table) SetCell(row *Row, needle string, val interface{}) {
 	case CellFloat:
 		row.Cells[indx].FloatVal = new(sql.NullFloat64)
 		row.Cells[indx].FloatVal.Scan(val)
+	case CellTime:
+		row.Cells[indx].TimeVal = new(sql.NullTime)
+		row.Cells[indx].TimeVal.Scan(val)
 	}
 }
 
@@ -143,6 +146,8 @@ func (t *Table) GetRows(q Query) *Rows {
 				scanList = append(scanList, &c.IntVal)
 			case CellFloat:
 				scanList = append(scanList, &c.FloatVal)
+			case CellTime:
+				scanList = append(scanList, &c.TimeVal)
 			}
 		}
 
@@ -183,6 +188,8 @@ func (t *Table) Insert(row *Row) {
 				rowData = append(rowData, c.IntVal)
 			case CellFloat:
 				rowData = append(rowData, c.FloatVal)
+			case CellTime:
+				rowData = append(rowData, c.TimeVal)
 			}
 		}
 	}

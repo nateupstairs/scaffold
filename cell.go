@@ -14,6 +14,7 @@ const (
 	CellString
 	CellInt
 	CellFloat
+	CellTime
 )
 
 // Cell type container
@@ -26,6 +27,7 @@ type Cell struct {
 	StringVal *sql.NullString
 	IntVal    *sql.NullInt64
 	FloatVal  *sql.NullFloat64
+	TimeVal   *sql.NullTime
 }
 
 // GetValue from cell
@@ -39,6 +41,8 @@ func (c *Cell) GetValue() (interface{}, error) {
 		return c.IntVal.Value()
 	case CellFloat:
 		return c.FloatVal.Value()
+	case CellTime:
+		return c.TimeVal.Value()
 	}
 
 	return nil, errors.New("Missing cell type")

@@ -79,7 +79,7 @@ func GetRaw(q string) *Rows {
 			cell.Name = c.Name()
 
 			switch c.DatabaseTypeName() {
-			case "BOOL":
+			case "BOOL", "BIT":
 				cell.Type = CellBool
 				scanList = append(scanList, &cell.BoolVal)
 			case "TEXT", "VARCHAR", "NVARCHAR":
@@ -88,11 +88,14 @@ func GetRaw(q string) *Rows {
 			case "INT", "BIGINT", "INT8":
 				cell.Type = CellInt
 				scanList = append(scanList, &cell.IntVal)
-			case "FLOAT", "DECIMAL":
+			case "FLOAT", "DECIMAL", "MONEY":
 				cell.Type = CellFloat
 				scanList = append(scanList, &cell.FloatVal)
+			case "DATETIME":
+				cell.Type = CellTime
+				scanList = append(scanList, &cell.TimeVal)
 			default:
-				panic("field type not accounted for" + c.DatabaseTypeName())
+				panic("field type not accounted for: " + c.DatabaseTypeName())
 			}
 		}
 
