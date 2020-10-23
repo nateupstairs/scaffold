@@ -85,10 +85,10 @@ func GetRaw(q string) *Rows {
 			case "TEXT", "VARCHAR", "NVARCHAR":
 				cell.Type = CellString
 				scanList = append(scanList, &cell.StringVal)
-			case "INT", "BIGINT", "INT8":
+			case "INT", "INT4", "INT8", "BIGINT":
 				cell.Type = CellInt
 				scanList = append(scanList, &cell.IntVal)
-			case "FLOAT", "DECIMAL", "MONEY":
+			case "FLOAT", "FLOAT4", "FLOAT8", "DECIMAL", "MONEY", "NUMERIC":
 				cell.Type = CellFloat
 				scanList = append(scanList, &cell.FloatVal)
 			case "DATETIME":

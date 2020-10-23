@@ -34,14 +34,29 @@ type Cell struct {
 func (c *Cell) GetValue() (interface{}, error) {
 	switch c.Type {
 	case CellBool:
+		if c.BoolVal == nil {
+			return nil, errors.New("Missing cell value")
+		}
 		return c.BoolVal.Value()
 	case CellString:
+		if c.StringVal == nil {
+			return nil, errors.New("Missing cell value")
+		}
 		return c.StringVal.Value()
 	case CellInt:
+		if c.IntVal == nil {
+			return nil, errors.New("Missing cell value")
+		}
 		return c.IntVal.Value()
 	case CellFloat:
+		if c.FloatVal == nil {
+			return nil, errors.New("Missing cell value")
+		}
 		return c.FloatVal.Value()
 	case CellTime:
+		if c.TimeVal == nil {
+			return nil, errors.New("Missing cell value")
+		}
 		return c.TimeVal.Value()
 	}
 
