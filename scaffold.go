@@ -122,58 +122,22 @@ func init() {
 		},
 	}
 
-	tmpl, err = tmpl.New("schema").Funcs(funcMap).Parse(`
-		CREATE TABLE IF NOT EXISTS {{.Name}} (
-			{{ range $index, $cell := .Cells -}}
-				{{if $index}},{{end -}}
-				{{$cell.Name}} {{$cell.SQL}}
-			{{end}}
-		)
-	`)
+	tmpl, err = tmpl.New("query").Funcs(funcMap).Parse(queryTemplate)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	tmpl, err = tmpl.New("insert").Funcs(funcMap).Parse(`
-		INSERT INTO {{.table.Name}} (
-			{{ range $index, $field := .fields -}}
-				{{if $index}},{{end -}}
-				{{$field}}
-			{{end}}
-		)
-		values (
-			{{ range $index, $field := .fields -}}
-				{{- if $index}},{{end -}}
-				${{inc $index}}
-			{{end}}
-		)
-	`)
+	tmpl, err = tmpl.New("schema").Funcs(funcMap).Parse(schemaTemplate)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	tmpl, err = tmpl.New("select").Funcs(funcMap).Parse(`
-		SELECT
-			{{ range $index, $field := .fields -}}
-				{{if $index}},{{end}}{{$field}}
-			{{end}}
-		FROM {{.table.Name}}
-		{{ if .query -}}
-			{{ if .query.Filters -}}
-				{{ range $index, $filter := .query.Filters -}}
-				{{if $index}}AND{{else}}WHERE{{end}} {{$filter.Field}} {{$filter.Comparison}} {{$filter.Value}}
-				{{- end -}}
-			{{- end -}}
-			{{- if .query.Orders -}}
-				{{- range $index, $order := .query.Orders -}}
-				{{- if $index}},{{else}}
-		ORDER BY{{end}} {{$order.Field}} {{$order.Direction}}
-				{{- end -}}
-			{{- end }}
-		LIMIT {{.query.Limit}}
-		OFFSET {{.query.Offset}}
-		{{- end -}}
-	`)
+	tmpl, err = tmpl.New("insert").Funcs(funcMap).Parse(insertTemplate)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tmpl, err = tmpl.New("select").Funcs(funcMap).Parse(selectTemplate)
 	if err != nil {
 		log.Fatal(err)
 	}
