@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"database/sql"
 	"errors"
-	"log"
 )
 
 // Table structure
@@ -92,7 +91,7 @@ func (t *Table) GetCell(row *Row, needle string) (interface{}, error) {
 }
 
 // GetRows runs a query and returns a rows structure
-func (t *Table) GetRows(q Query) *Rows {
+func (t *Table) GetRows(q Query) (*Rows, error) {
 	result := new(Rows)
 	fields := make([]string, 0)
 
@@ -114,18 +113,18 @@ func (t *Table) GetRows(q Query) *Rows {
 
 	err := tmpl.ExecuteTemplate(&b, "select", templateVars)
 	if err != nil {
-		log.Fatal(err)
+		return result, errors.New("Failure to execute template")
 	}
 
 	rows, err := db.Query(b.String())
 	if err != nil {
-		log.Fatal(err)
+		return result, errors.New("Failure to execute query")
 	}
 	defer rows.Close()
 
 	cols, err := rows.ColumnTypes()
 	if err != nil {
-		return result
+		return result, errors.New("Failure to extract column types")
 	}
 
 	for _, v := range cols {
@@ -153,16 +152,16 @@ func (t *Table) GetRows(q Query) *Rows {
 
 		err := rows.Scan(scanList...)
 		if err != nil {
-			log.Fatal(err)
+			return result, errors.New("Failure to scan row")
 		}
 		result.Rows = append(result.Rows, row)
 	}
 
-	return result
+	return result, nil
 }
 
 // Insert inserts into a table
-func (t *Table) Insert(row *Row) {
+func (t *Table) Insert(row *Row) error {
 	fields := make([]string, 0)
 
 	for _, c := range row.Cells {
@@ -198,11 +197,13 @@ func (t *Table) Insert(row *Row) {
 
 	err := tmpl.ExecuteTemplate(&b, "insert", templateVars)
 	if err != nil {
-		log.Fatal(err)
+		return errors.New("Failure to execute template")
 	}
 
 	_, err = db.Exec(b.String(), rowData...)
 	if err != nil {
-		log.Fatal(err)
+		return errors.New("Failure to execute query")
 	}
+
+	return nil
 }

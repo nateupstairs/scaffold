@@ -3,6 +3,7 @@ package scaffold
 import (
 	"bytes"
 	"database/sql"
+	"errors"
 	"log"
 	"text/template"
 )
@@ -45,7 +46,7 @@ func Raw(q string) {
 }
 
 // GetRaw runs a raw query that expects results
-func GetRaw(q string) *Rows {
+func GetRaw(q string) (*Rows, error) {
 	result := new(Rows)
 
 	result.Rows = make([]*Row, 0)
@@ -53,13 +54,13 @@ func GetRaw(q string) *Rows {
 
 	rows, err := db.Query(q)
 	if err != nil {
-		log.Fatal(err)
+		return result, errors.New("Failure to execute query")
 	}
 	defer rows.Close()
 
 	cols, err := rows.ColumnTypes()
 	if err != nil {
-		return result
+		return result, errors.New("Failure to extract column types")
 	}
 
 	for _, v := range cols {
@@ -101,12 +102,12 @@ func GetRaw(q string) *Rows {
 
 		err := rows.Scan(scanList...)
 		if err != nil {
-			log.Fatal(err)
+			return result, errors.New("Failure to scan row")
 		}
 		result.Rows = append(result.Rows, row)
 	}
 
-	return result
+	return result, nil
 }
 
 func init() {
