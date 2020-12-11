@@ -123,6 +123,11 @@ func init() {
 		},
 	}
 
+	tmpl, err = tmpl.New("filter").Funcs(funcMap).Parse(filterTemplate)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	tmpl, err = tmpl.New("query").Funcs(funcMap).Parse(queryTemplate)
 	if err != nil {
 		log.Fatal(err)

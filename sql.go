@@ -1,11 +1,29 @@
 package scaffold
 
+const filterTemplate = `
+{{- range $index, $filter := .query.Filters }}
+{{if $index}}{{if eq $filter.Operator ""}}AND{{else}}{{$filter.Operator}}{{end}}{{else}}WHERE{{end}}
+{{- if not $filter.Group}}
+{{$filter.Field}} {{$filter.Comparison}} {{$filter.Value}}
+{{- else}}
+(
+	{{ range $indexInner, $filterInner := $filter.Group -}}
+		{{if $indexInner}}{{if eq $filterInner.Operator ""}}
+	AND
+	{{else}}
+	{{$filterInner.Operator}}
+	{{end}}{{end -}}
+		{{$filterInner.Field}} {{$filterInner.Comparison}} {{$filterInner.Value}}
+	{{- end }}
+)
+{{- end -}}
+{{- end }}
+`
+
 const queryTemplate = `
 {{- if .query -}}
 	{{- if .query.Filters -}}
-		{{- range $index, $filter := .query.Filters }}
-{{if $index}}{{if eq $filter.Operator ""}}AND{{else}}{{$filter.Operator}}{{end}}{{else}}WHERE{{end}} {{$filter.Field}} {{$filter.Comparison}} {{$filter.Value}}
-		{{- end }}
+{{- template "filter" . -}}
 	{{- end -}}
 	{{- if .query.Orders -}}
 		{{- range $index, $order := .query.Orders -}}

@@ -10,6 +10,7 @@ type Filter struct {
 	Field      string
 	Comparison string
 	Value      string
+	Group      []Filter
 }
 
 // Order a query
