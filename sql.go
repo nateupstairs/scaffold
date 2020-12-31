@@ -40,7 +40,7 @@ const schemaTemplate = `
 CREATE TABLE IF NOT EXISTS {{.Name}} (
 	{{ range $index, $cell := .Cells -}}
 		{{if $index}},{{end -}}
-		{{$cell.Name}} {{$cell.SQL}}
+		"{{$cell.Name}}" {{$cell.SQL}}
 	{{end}}
 )
 `
@@ -49,21 +49,21 @@ const insertTemplate = `
 INSERT INTO {{.table.Name}} (
 	{{ range $index, $field := .fields -}}
 		{{if $index}},{{end -}}
-		{{$field}}
+		"{{$field}}"
 	{{end}}
 )
 values (
-	{{ range $index, $field := .fields -}}
+	{{ range $index, $ph := .placeholders -}}
 		{{- if $index}},{{end -}}
-		${{inc $index}}
+		{{$ph}}
 	{{end}}
 )
 `
 const selectTemplate = `
 SELECT
 	{{ range $index, $field := .fields -}}
-		{{if $index}},{{end}}{{$field}}
+		{{if $index}},{{end}}"{{$field}}"
 	{{end}}
-FROM {{.table.Name}}
+FROM "{{.table.Name}}"
 {{- template "query" . -}}
 `

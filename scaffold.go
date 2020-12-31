@@ -6,6 +6,8 @@ import (
 	"errors"
 	"log"
 	"text/template"
+
+	"github.com/lib/pq"
 )
 
 var db *sql.DB
@@ -82,19 +84,39 @@ func GetRaw(q string) (*Rows, error) {
 			switch c.DatabaseTypeName() {
 			case "BOOL", "BIT":
 				cell.Type = CellBool
-				scanList = append(scanList, &cell.BoolVal)
+				scanList = append(scanList, cell)
+			case "BOOL[]", "BIT[]":
+				xx := NewSQLBoolArray()
+
+				cell.BoolArrayVal = xx
+				scanList = append(scanList, pq.Array(&xx.Value))
 			case "TEXT", "VARCHAR", "NVARCHAR":
 				cell.Type = CellString
-				scanList = append(scanList, &cell.StringVal)
+				scanList = append(scanList, cell)
+			case "TEXT[]", "VARCHAR[]", "NVARCHAR[]":
+				xx := NewSQLStringArray()
+
+				cell.StringArrayVal = xx
+				scanList = append(scanList, pq.Array(&xx.Value))
 			case "INT", "INT4", "INT8", "BIGINT":
 				cell.Type = CellInt
-				scanList = append(scanList, &cell.IntVal)
+				scanList = append(scanList, cell)
+			case "INT[]", "INT4[]", "INT8[]", "BIGINT[]":
+				xx := NewSQLIntArray()
+
+				cell.IntArrayVal = xx
+				scanList = append(scanList, pq.Array(&xx.Value))
 			case "FLOAT", "FLOAT4", "FLOAT8", "DECIMAL", "MONEY", "NUMERIC":
 				cell.Type = CellFloat
-				scanList = append(scanList, &cell.FloatVal)
+				scanList = append(scanList, cell)
+			case "FLOAT[]", "FLOAT4[]", "FLOAT8[]", "DECIMAL[]", "MONEY[]", "NUMERIC[]":
+				xx := NewSQLFloatArray()
+
+				cell.FloatArrayVal = xx
+				scanList = append(scanList, pq.Array(&xx.Value))
 			case "DATETIME":
 				cell.Type = CellTime
-				scanList = append(scanList, &cell.TimeVal)
+				scanList = append(scanList, cell)
 			default:
 				panic("field type not accounted for: " + c.DatabaseTypeName())
 			}

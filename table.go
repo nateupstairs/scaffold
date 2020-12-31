@@ -2,8 +2,10 @@ package scaffold
 
 import (
 	"bytes"
-	"database/sql"
 	"errors"
+	"strconv"
+
+	"github.com/lib/pq"
 )
 
 // Table structure
@@ -59,23 +61,8 @@ func (t *Table) SetCell(row *Row, needle string, val interface{}) {
 		row.Cells[indx] = c
 	}
 
-	switch cell.Type {
-	case CellBool:
-		row.Cells[indx].BoolVal = new(sql.NullBool)
-		row.Cells[indx].BoolVal.Scan(val)
-	case CellString:
-		row.Cells[indx].StringVal = new(sql.NullString)
-		row.Cells[indx].StringVal.Scan(val)
-	case CellInt:
-		row.Cells[indx].IntVal = new(sql.NullInt64)
-		row.Cells[indx].IntVal.Scan(val)
-	case CellFloat:
-		row.Cells[indx].FloatVal = new(sql.NullFloat64)
-		row.Cells[indx].FloatVal.Scan(val)
-	case CellTime:
-		row.Cells[indx].TimeVal = new(sql.NullTime)
-		row.Cells[indx].TimeVal.Scan(val)
-	}
+	_ = cell.SetValue(val)
+	return
 }
 
 // GetCell gets a row's data by cell name
@@ -137,16 +124,28 @@ func (t *Table) GetRows(q Query) (*Rows, error) {
 
 		for _, c := range row.Cells {
 			switch c.Type {
-			case CellBool:
-				scanList = append(scanList, &c.BoolVal)
-			case CellString:
-				scanList = append(scanList, &c.StringVal)
-			case CellInt:
-				scanList = append(scanList, &c.IntVal)
-			case CellFloat:
-				scanList = append(scanList, &c.FloatVal)
-			case CellTime:
-				scanList = append(scanList, &c.TimeVal)
+			case CellBool, CellString, CellInt, CellFloat, CellTime:
+				scanList = append(scanList, c)
+			case CellBoolArray:
+				xx := NewSQLBoolArray()
+
+				c.BoolArrayVal = xx
+				scanList = append(scanList, pq.Array(&xx.Value))
+			case CellStringArray:
+				xx := NewSQLStringArray()
+
+				c.StringArrayVal = xx
+				scanList = append(scanList, pq.Array(&xx.Value))
+			case CellIntArray:
+				xx := NewSQLIntArray()
+
+				c.IntArrayVal = xx
+				scanList = append(scanList, pq.Array(&xx.Value))
+			case CellFloatArray:
+				xx := NewSQLFloatArray()
+
+				c.FloatArrayVal = xx
+				scanList = append(scanList, pq.Array(&xx.Value))
 			}
 		}
 
@@ -163,6 +162,7 @@ func (t *Table) GetRows(q Query) (*Rows, error) {
 // Insert inserts into a table
 func (t *Table) Insert(row *Row) error {
 	fields := make([]string, 0)
+	placeholders := make([]string, 0)
 
 	for _, c := range row.Cells {
 		if !c.Exclude {
@@ -175,23 +175,85 @@ func (t *Table) Insert(row *Row) error {
 	templateVars["fields"] = fields
 
 	var rowData = make([]interface{}, 0)
+	var placeholderCursor = 1
 
 	for _, c := range row.Cells {
 		if !c.Exclude {
 			switch c.Type {
-			case CellBool:
-				rowData = append(rowData, c.BoolVal)
-			case CellString:
-				rowData = append(rowData, c.StringVal)
-			case CellInt:
-				rowData = append(rowData, c.IntVal)
-			case CellFloat:
-				rowData = append(rowData, c.FloatVal)
-			case CellTime:
-				rowData = append(rowData, c.TimeVal)
+			case CellBool, CellString, CellInt, CellFloat, CellTime:
+				value, err := c.GetValue()
+				if err != nil {
+					return err
+				}
+				rowData = append(rowData, value)
+				placeholders = append(placeholders, "$"+strconv.Itoa(placeholderCursor))
+			case CellBoolArray:
+				for _, val := range c.BoolArrayVal.Value {
+					rowData = append(rowData, val)
+				}
+
+				var p string
+				for i := 0; i < len(c.BoolArrayVal.Value); i++ {
+					p += "$" + strconv.Itoa(placeholderCursor)
+					if i < len(c.BoolArrayVal.Value)-1 {
+						p += ","
+						placeholderCursor++
+					}
+				}
+
+				placeholders = append(placeholders, "ARRAY["+p+"]")
+			case CellStringArray:
+				for _, val := range c.StringArrayVal.Value {
+					rowData = append(rowData, val)
+				}
+
+				var p string
+				for i := 0; i < len(c.StringArrayVal.Value); i++ {
+					p += "$" + strconv.Itoa(placeholderCursor)
+					if i < len(c.StringArrayVal.Value)-1 {
+						p += ","
+						placeholderCursor++
+					}
+				}
+
+				placeholders = append(placeholders, "ARRAY["+p+"]")
+			case CellIntArray:
+				for _, val := range c.IntArrayVal.Value {
+					rowData = append(rowData, val)
+				}
+
+				var p string
+				for i := 0; i < len(c.IntArrayVal.Value); i++ {
+					p += "$" + strconv.Itoa(placeholderCursor)
+					if i < len(c.IntArrayVal.Value)-1 {
+						p += ","
+						placeholderCursor++
+					}
+				}
+
+				placeholders = append(placeholders, "ARRAY["+p+"]")
+			case CellFloatArray:
+				for _, val := range c.FloatArrayVal.Value {
+					rowData = append(rowData, val)
+				}
+
+				var p string
+				for i := 0; i < len(c.FloatArrayVal.Value); i++ {
+					p += "$" + strconv.Itoa(placeholderCursor)
+					if i < len(c.FloatArrayVal.Value)-1 {
+						p += ","
+						placeholderCursor++
+					}
+				}
+
+				placeholders = append(placeholders, "ARRAY["+p+"]")
 			}
+
+			placeholderCursor++
 		}
 	}
+
+	templateVars["placeholders"] = placeholders
 
 	var b bytes.Buffer
 
