@@ -28,7 +28,7 @@ const queryTemplate = `
 	{{- if .query.Orders -}}
 		{{- range $index, $order := .query.Orders -}}
 		{{- if $index}},{{else}}
-ORDER BY{{end}} {{$order.Field}} {{$order.Direction}}
+ORDER BY{{end}} "{{$order.Field}}" {{$order.Direction}}
 		{{- end -}}
 	{{- end }}
 {{ if ge .query.Limit 0 }}LIMIT {{.query.Limit}}{{ end }}
