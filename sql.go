@@ -4,7 +4,7 @@ const filterTemplate = `
 {{- range $index, $filter := .query.Filters }}
 {{if $index}}{{if eq $filter.Operator ""}}AND{{else}}{{$filter.Operator}}{{end}}{{else}}WHERE{{end}}
 {{- if not $filter.Group}}
-{{$filter.Field}} {{$filter.Comparison}} {{$filter.Value}}
+"{{$filter.Field}}" {{$filter.Comparison}} {{$filter.Value}}
 {{- else}}
 (
 	{{ range $indexInner, $filterInner := $filter.Group -}}
@@ -13,7 +13,7 @@ const filterTemplate = `
 	{{else}}
 	{{$filterInner.Operator}}
 	{{end}}{{end -}}
-		{{$filterInner.Field}} {{$filterInner.Comparison}} {{$filterInner.Value}}
+		"{{$filterInner.Field}}" {{$filterInner.Comparison}} {{$filterInner.Value}}
 	{{- end }}
 )
 {{- end -}}
