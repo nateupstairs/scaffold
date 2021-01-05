@@ -201,7 +201,7 @@ func (t *Table) Insert(row *Row) error {
 					}
 				}
 
-				placeholders = append(placeholders, "ARRAY["+p+"]")
+				placeholders = append(placeholders, "ARRAY["+p+"]::bool[]")
 			case CellStringArray:
 				for _, val := range c.StringArrayVal.Value {
 					rowData = append(rowData, val)
@@ -216,7 +216,7 @@ func (t *Table) Insert(row *Row) error {
 					}
 				}
 
-				placeholders = append(placeholders, "ARRAY["+p+"]")
+				placeholders = append(placeholders, "ARRAY["+p+"]::text[]")
 			case CellIntArray:
 				for _, val := range c.IntArrayVal.Value {
 					rowData = append(rowData, val)
@@ -231,7 +231,7 @@ func (t *Table) Insert(row *Row) error {
 					}
 				}
 
-				placeholders = append(placeholders, "ARRAY["+p+"]")
+				placeholders = append(placeholders, "ARRAY["+p+"]::integer[]")
 			case CellFloatArray:
 				for _, val := range c.FloatArrayVal.Value {
 					rowData = append(rowData, val)
@@ -246,7 +246,7 @@ func (t *Table) Insert(row *Row) error {
 					}
 				}
 
-				placeholders = append(placeholders, "ARRAY["+p+"]")
+				placeholders = append(placeholders, "ARRAY["+p+"]::float[]")
 			}
 
 			placeholderCursor++

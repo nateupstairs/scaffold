@@ -36,7 +36,7 @@ func (r *Row) AsJSON() []byte {
 				}
 			}
 
-			jsv, _ = sjson.SetBytes(jsv, cell.Name, cjsv)
+			jsv, _ = sjson.SetRawBytes(jsv, cell.Name, cjsv)
 		case CellStringArray:
 			v := cell.StringArrayVal
 			cjsv := []byte("[]")
@@ -47,7 +47,7 @@ func (r *Row) AsJSON() []byte {
 				}
 			}
 
-			jsv, _ = sjson.SetBytes(jsv, cell.Name, cjsv)
+			jsv, _ = sjson.SetRawBytes(jsv, cell.Name, cjsv)
 		case CellIntArray:
 			v := cell.IntArrayVal
 			cjsv := []byte("[]")
@@ -58,7 +58,7 @@ func (r *Row) AsJSON() []byte {
 				}
 			}
 
-			jsv, _ = sjson.SetBytes(jsv, cell.Name, cjsv)
+			jsv, _ = sjson.SetRawBytes(jsv, cell.Name, cjsv)
 		case CellFloatArray:
 			v := cell.FloatArrayVal
 			cjsv := []byte("[]")
@@ -69,7 +69,7 @@ func (r *Row) AsJSON() []byte {
 				}
 			}
 
-			jsv, _ = sjson.SetBytes(jsv, cell.Name, cjsv)
+			jsv, _ = sjson.SetRawBytes(jsv, cell.Name, cjsv)
 		}
 	}
 
