@@ -6,8 +6,6 @@ import (
 	"errors"
 	"log"
 	"text/template"
-
-	"github.com/lib/pq"
 )
 
 var db *sql.DB
@@ -20,11 +18,6 @@ func NewTable(name string, cells []*Cell) *Table {
 
 	t.Name = name
 	t.Cells = cells
-	t.CellMap = make(map[string]int)
-
-	for index, value := range cells {
-		t.CellMap[value.Name] = index
-	}
 
 	tables[name] = t
 
@@ -71,52 +64,77 @@ func GetRaw(q string) (*Rows, error) {
 
 	for rows.Next() {
 		row := new(Row)
-		row.Cells = make([]*Cell, 0)
+		row.Cells = make(map[string]*Cell, 0)
 
 		scanList := make([]interface{}, 0)
 
 		for _, c := range cols {
 			cell := new(Cell)
-			row.Cells = append(row.Cells, cell)
+			row.Cells[c.Name()] = cell
 
 			cell.Name = c.Name()
 
 			switch c.DatabaseTypeName() {
 			case "BOOL", "BIT":
+				data := NewSQLBool()
+				cell.Data = data
 				cell.Type = CellBool
-				scanList = append(scanList, cell)
+				scanList = append(scanList, cell.CellTarget())
 			case "BOOL[]", "BIT[]":
 				xx := NewSQLBoolArray()
 
-				cell.BoolArrayVal = xx
-				scanList = append(scanList, pq.Array(&xx.Value))
+				cell.Data = xx
+				scanList = append(scanList, cell.CellTarget())
 			case "TEXT", "VARCHAR", "NVARCHAR":
+				data := NewSQLString()
+				cell.Data = data
 				cell.Type = CellString
-				scanList = append(scanList, cell)
+				scanList = append(scanList, cell.CellTarget())
 			case "TEXT[]", "VARCHAR[]", "NVARCHAR[]":
 				xx := NewSQLStringArray()
 
-				cell.StringArrayVal = xx
-				scanList = append(scanList, pq.Array(&xx.Value))
+				cell.Data = xx
+				scanList = append(scanList, cell.CellTarget())
 			case "INT", "INT4", "INT8", "BIGINT":
+				data := NewSQLInt()
+				cell.Data = data
 				cell.Type = CellInt
-				scanList = append(scanList, cell)
+				scanList = append(scanList, cell.CellTarget())
 			case "INT[]", "INT4[]", "INT8[]", "BIGINT[]":
 				xx := NewSQLIntArray()
 
-				cell.IntArrayVal = xx
-				scanList = append(scanList, pq.Array(&xx.Value))
+				cell.Data = xx
+				scanList = append(scanList, cell.CellTarget())
 			case "FLOAT", "FLOAT4", "FLOAT8", "DECIMAL", "MONEY", "NUMERIC":
+				data := NewSQLFloat()
+				cell.Data = data
 				cell.Type = CellFloat
-				scanList = append(scanList, cell)
+				scanList = append(scanList, cell.CellTarget())
 			case "FLOAT[]", "FLOAT4[]", "FLOAT8[]", "DECIMAL[]", "MONEY[]", "NUMERIC[]":
 				xx := NewSQLFloatArray()
 
-				cell.FloatArrayVal = xx
-				scanList = append(scanList, pq.Array(&xx.Value))
+				cell.Data = xx
+				scanList = append(scanList, cell.CellTarget())
+			case "DATE":
+				data := NewSQLDate()
+				cell.Data = data
+				cell.Type = CellDate
+				scanList = append(scanList, cell.CellTarget())
+			case "DATE[]":
+				xx := NewSQLDateArray()
+
+				cell.Data = xx
+				scanList = append(scanList, cell.CellTarget())
 			case "DATETIME":
-				cell.Type = CellTime
-				scanList = append(scanList, cell)
+				data := NewSQLDatetime()
+				cell.Data = data
+				cell.Type = CellDatetime
+				scanList = append(scanList, cell.CellTarget())
+			case "DATETIME[]":
+				xx := NewSQLDatetimeArray()
+
+				cell.Data = xx
+				scanList = append(scanList, cell.CellTarget())
 			default:
 				panic("field type not accounted for: " + c.DatabaseTypeName())
 			}

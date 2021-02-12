@@ -5,76 +5,30 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/lib/pq"
+	"github.com/davecgh/go-spew/spew"
 )
 
 // Table structure
 type Table struct {
-	Name    string
-	Cells   []*Cell
-	CellMap map[string]int
-}
-
-// GetCellIndex gets index for cell name in table definition
-func (t *Table) GetCellIndex(needle string) (int, error) {
-	v, found := t.CellMap[needle]
-	if found {
-		return v, nil
-	}
-
-	return 0, errors.New("Invalid cell name")
+	Name  string
+	Cells []*Cell
 }
 
 // NewRow creates a row that conforms to the table definition
 func (t *Table) NewRow() *Row {
 	row := new(Row)
-	row.Cells = make([]*Cell, len(t.Cells))
+	row.Cells = make(map[string]*Cell, 0)
 
-	for indx, proto := range t.Cells {
+	for _, proto := range t.Cells {
 		cell := new(Cell)
 
 		cell.Name = proto.Name
 		cell.Type = proto.Type
 		cell.SQL = proto.SQL
-		row.Cells[indx] = cell
+		row.Cells[cell.Name] = cell
 	}
 
 	return row
-}
-
-// SetCell sets a row's cell by name
-func (t *Table) SetCell(row *Row, needle string, val interface{}) {
-	indx, err := t.GetCellIndex(needle)
-	if err != nil {
-		return
-	}
-
-	cellDef := t.Cells[indx]
-	cell := row.Cells[indx]
-	if cell == nil {
-		c := new(Cell)
-
-		c.Name = cellDef.Name
-		c.Type = cellDef.Type
-		c.SQL = cellDef.SQL
-
-		row.Cells[indx] = c
-	}
-
-	_ = cell.SetValue(val)
-	return
-}
-
-// GetCell gets a row's data by cell name
-func (t *Table) GetCell(row *Row, needle string) (interface{}, error) {
-	indx, err := t.GetCellIndex(needle)
-	if err != nil {
-		return nil, errors.New("Invalid cell")
-	}
-
-	cell := row.Cells[indx]
-
-	return cell.GetValue()
 }
 
 // GetRows runs a query and returns a rows structure
@@ -122,30 +76,64 @@ func (t *Table) GetRows(q Query) (*Rows, error) {
 		row := t.NewRow()
 		scanList := make([]interface{}, 0)
 
-		for _, c := range row.Cells {
+		for _, col := range t.Cells {
+			c := row.Cells[col.Name]
+
 			switch c.Type {
-			case CellBool, CellString, CellInt, CellFloat, CellTime:
-				scanList = append(scanList, c)
+			case CellBool:
+				data := NewSQLBool()
+				c.Data = data
+				scanList = append(scanList, c.CellTarget())
+			case CellString:
+				data := NewSQLString()
+				c.Data = data
+				scanList = append(scanList, c.CellTarget())
+			case CellInt:
+				data := NewSQLInt()
+				c.Data = data
+				scanList = append(scanList, c.CellTarget())
+			case CellFloat:
+				data := NewSQLFloat()
+				c.Data = data
+				scanList = append(scanList, c.CellTarget())
+			case CellDate:
+				data := NewSQLDate()
+				c.Data = data
+				scanList = append(scanList, c.CellTarget())
+			case CellDatetime:
+				data := NewSQLDatetime()
+				c.Data = data
+				scanList = append(scanList, c.CellTarget())
 			case CellBoolArray:
 				xx := NewSQLBoolArray()
 
-				c.BoolArrayVal = xx
-				scanList = append(scanList, pq.Array(&xx.Value))
+				c.Data = xx
+				scanList = append(scanList, c.CellTarget())
 			case CellStringArray:
 				xx := NewSQLStringArray()
 
-				c.StringArrayVal = xx
-				scanList = append(scanList, pq.Array(&xx.Value))
+				c.Data = xx
+				scanList = append(scanList, c.CellTarget())
 			case CellIntArray:
 				xx := NewSQLIntArray()
 
-				c.IntArrayVal = xx
-				scanList = append(scanList, pq.Array(&xx.Value))
+				c.Data = xx
+				scanList = append(scanList, c.CellTarget())
 			case CellFloatArray:
 				xx := NewSQLFloatArray()
 
-				c.FloatArrayVal = xx
-				scanList = append(scanList, pq.Array(&xx.Value))
+				c.Data = xx
+				scanList = append(scanList, c.CellTarget())
+			case CellDateArray:
+				xx := NewSQLDateArray()
+
+				c.Data = xx
+				scanList = append(scanList, c.CellTarget())
+			case CellDatetimeArray:
+				xx := NewSQLDatetimeArray()
+
+				c.Data = xx
+				scanList = append(scanList, c.CellTarget())
 			}
 		}
 
@@ -164,9 +152,12 @@ func (t *Table) Insert(row *Row) error {
 	fields := make([]string, 0)
 	placeholders := make([]string, 0)
 
-	for _, c := range row.Cells {
-		if !c.Exclude {
-			fields = append(fields, c.Name)
+	for _, tc := range t.Cells {
+		c, ok := row.Cells[tc.Name]
+		if ok {
+			if !c.Exclude {
+				fields = append(fields, c.Name)
+			}
 		}
 	}
 
@@ -177,79 +168,130 @@ func (t *Table) Insert(row *Row) error {
 	var rowData = make([]interface{}, 0)
 	var placeholderCursor = 1
 
-	for _, c := range row.Cells {
-		if !c.Exclude {
-			switch c.Type {
-			case CellBool, CellString, CellInt, CellFloat, CellTime:
-				value, err := c.GetValue()
-				if err != nil {
-					return err
-				}
-				rowData = append(rowData, value)
-				placeholders = append(placeholders, "$"+strconv.Itoa(placeholderCursor))
-			case CellBoolArray:
-				for _, val := range c.BoolArrayVal.Value {
-					rowData = append(rowData, val)
-				}
+	for _, col := range t.Cells {
+		c, ok := row.Cells[col.Name]
+		if ok {
+			if !c.Exclude {
+				switch c.Type {
+				case CellBool, CellString, CellInt, CellFloat, CellDate, CellDatetime:
+					value, err := c.GetValue()
+					if err != nil {
+						return err
+					}
+					rowData = append(rowData, value)
+					placeholders = append(placeholders, "$"+strconv.Itoa(placeholderCursor))
+				case CellBoolArray:
+					v, err := c.BoolArray()
+					if err == nil {
+						for _, val := range v {
+							rowData = append(rowData, val)
+						}
 
-				var p string
-				for i := 0; i < len(c.BoolArrayVal.Value); i++ {
-					p += "$" + strconv.Itoa(placeholderCursor)
-					if i < len(c.BoolArrayVal.Value)-1 {
-						p += ","
-						placeholderCursor++
+						var p string
+						for i := 0; i < len(v); i++ {
+							p += "$" + strconv.Itoa(placeholderCursor)
+							if i < len(v)-1 {
+								p += ","
+								placeholderCursor++
+							}
+						}
+
+						placeholders = append(placeholders, "ARRAY["+p+"]::bool[]")
+					}
+				case CellStringArray:
+					v, err := c.StringArray()
+					if err == nil {
+						for _, val := range v {
+							rowData = append(rowData, val)
+						}
+
+						var p string
+						for i := 0; i < len(v); i++ {
+							p += "$" + strconv.Itoa(placeholderCursor)
+							if i < len(v)-1 {
+								p += ","
+								placeholderCursor++
+							}
+						}
+
+						placeholders = append(placeholders, "ARRAY["+p+"]::text[]")
+					}
+				case CellIntArray:
+					v, err := c.IntArray()
+					if err == nil {
+						for _, val := range v {
+							rowData = append(rowData, val)
+						}
+
+						var p string
+						for i := 0; i < len(v); i++ {
+							p += "$" + strconv.Itoa(placeholderCursor)
+							if i < len(v)-1 {
+								p += ","
+								placeholderCursor++
+							}
+						}
+
+						placeholders = append(placeholders, "ARRAY["+p+"]::integer[]")
+					}
+				case CellFloatArray:
+					v, err := c.FloatArray()
+					if err == nil {
+						for _, val := range v {
+							rowData = append(rowData, val)
+						}
+
+						var p string
+						for i := 0; i < len(v); i++ {
+							p += "$" + strconv.Itoa(placeholderCursor)
+							if i < len(v)-1 {
+								p += ","
+								placeholderCursor++
+							}
+						}
+
+						placeholders = append(placeholders, "ARRAY["+p+"]::float[]")
+					}
+				case CellDateArray:
+					v, err := c.DateArray()
+					if err == nil {
+						for _, val := range v {
+							rowData = append(rowData, val)
+						}
+
+						var p string
+						for i := 0; i < len(v); i++ {
+							p += "$" + strconv.Itoa(placeholderCursor)
+							if i < len(v)-1 {
+								p += ","
+								placeholderCursor++
+							}
+						}
+
+						placeholders = append(placeholders, "ARRAY["+p+"]::date[]")
+					}
+				case CellDatetimeArray:
+					v, err := c.DateArray()
+					if err == nil {
+						for _, val := range v {
+							rowData = append(rowData, val)
+						}
+
+						var p string
+						for i := 0; i < len(v); i++ {
+							p += "$" + strconv.Itoa(placeholderCursor)
+							if i < len(v)-1 {
+								p += ","
+								placeholderCursor++
+							}
+						}
+
+						placeholders = append(placeholders, "ARRAY["+p+"]::datetime[]")
 					}
 				}
 
-				placeholders = append(placeholders, "ARRAY["+p+"]::bool[]")
-			case CellStringArray:
-				for _, val := range c.StringArrayVal.Value {
-					rowData = append(rowData, val)
-				}
-
-				var p string
-				for i := 0; i < len(c.StringArrayVal.Value); i++ {
-					p += "$" + strconv.Itoa(placeholderCursor)
-					if i < len(c.StringArrayVal.Value)-1 {
-						p += ","
-						placeholderCursor++
-					}
-				}
-
-				placeholders = append(placeholders, "ARRAY["+p+"]::text[]")
-			case CellIntArray:
-				for _, val := range c.IntArrayVal.Value {
-					rowData = append(rowData, val)
-				}
-
-				var p string
-				for i := 0; i < len(c.IntArrayVal.Value); i++ {
-					p += "$" + strconv.Itoa(placeholderCursor)
-					if i < len(c.IntArrayVal.Value)-1 {
-						p += ","
-						placeholderCursor++
-					}
-				}
-
-				placeholders = append(placeholders, "ARRAY["+p+"]::integer[]")
-			case CellFloatArray:
-				for _, val := range c.FloatArrayVal.Value {
-					rowData = append(rowData, val)
-				}
-
-				var p string
-				for i := 0; i < len(c.FloatArrayVal.Value); i++ {
-					p += "$" + strconv.Itoa(placeholderCursor)
-					if i < len(c.FloatArrayVal.Value)-1 {
-						p += ","
-						placeholderCursor++
-					}
-				}
-
-				placeholders = append(placeholders, "ARRAY["+p+"]::float[]")
+				placeholderCursor++
 			}
-
-			placeholderCursor++
 		}
 	}
 
@@ -264,6 +306,7 @@ func (t *Table) Insert(row *Row) error {
 
 	_, err = db.Exec(b.String(), rowData...)
 	if err != nil {
+		spew.Dump(err)
 		return errors.New("Failure to execute query")
 	}
 
