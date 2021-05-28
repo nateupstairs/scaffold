@@ -2,10 +2,9 @@ package scaffold
 
 import (
 	"bytes"
+	"database/sql"
 	"errors"
 	"strconv"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
 // Table structure
@@ -17,7 +16,7 @@ type Table struct {
 // NewRow creates a row that conforms to the table definition
 func (t *Table) NewRow() *Row {
 	row := new(Row)
-	row.Cells = make(map[string]*Cell, 0)
+	row.Cells = make(map[string]*Cell)
 
 	for _, proto := range t.Cells {
 		cell := new(Cell)
@@ -176,10 +175,25 @@ func (t *Table) Insert(row *Row) error {
 				case CellBool, CellString, CellInt, CellFloat, CellDate, CellDatetime:
 					value, err := c.GetValue()
 					if err != nil {
-						return err
+						switch c.Type {
+						case CellBool:
+							rowData = append(rowData, sql.NullBool{})
+						case CellString:
+							rowData = append(rowData, sql.NullString{})
+						case CellInt:
+							rowData = append(rowData, sql.NullInt32{})
+						case CellFloat:
+							rowData = append(rowData, sql.NullFloat64{})
+						case CellDate:
+							rowData = append(rowData, sql.NullTime{})
+						case CellDatetime:
+							rowData = append(rowData, sql.NullTime{})
+						}
+						placeholders = append(placeholders, "$"+strconv.Itoa(placeholderCursor))
+					} else {
+						rowData = append(rowData, value)
+						placeholders = append(placeholders, "$"+strconv.Itoa(placeholderCursor))
 					}
-					rowData = append(rowData, value)
-					placeholders = append(placeholders, "$"+strconv.Itoa(placeholderCursor))
 				case CellBoolArray:
 					v, err := c.BoolArray()
 					if err == nil {
@@ -205,16 +219,21 @@ func (t *Table) Insert(row *Row) error {
 							rowData = append(rowData, val)
 						}
 
-						var p string
-						for i := 0; i < len(v); i++ {
-							p += "$" + strconv.Itoa(placeholderCursor)
-							if i < len(v)-1 {
-								p += ","
-								placeholderCursor++
+						if len(v) > 0 {
+							var p string
+							for i := 0; i < len(v); i++ {
+								p += "$" + strconv.Itoa(placeholderCursor)
+								if i < len(v)-1 {
+									p += ","
+									placeholderCursor++
+								}
 							}
-						}
 
-						placeholders = append(placeholders, "ARRAY["+p+"]::text[]")
+							placeholders = append(placeholders, "ARRAY["+p+"]::text[]")
+						} else {
+							rowData = append(rowData, sql.NullString{})
+							placeholders = append(placeholders, "$"+strconv.Itoa(placeholderCursor))
+						}
 					}
 				case CellIntArray:
 					v, err := c.IntArray()
@@ -306,7 +325,6 @@ func (t *Table) Insert(row *Row) error {
 
 	_, err = db.Exec(b.String(), rowData...)
 	if err != nil {
-		spew.Dump(err)
 		return errors.New("Failure to execute query")
 	}
 
