@@ -11,6 +11,7 @@ import (
 var db *sql.DB
 var tmpl *template.Template
 var tables map[string]*Table
+var mode string
 
 // NewTable generates a table
 func NewTable(name string, cells []*Cell) *Table {
@@ -95,12 +96,12 @@ func GetRaw(q string) (*Rows, error) {
 
 				cell.Data = xx
 				scanList = append(scanList, cell.CellTarget())
-			case "INT", "INT4", "INT8", "BIGINT":
+			case "INT", "INT4", "INT8", "BIGINT", "SMALLINT":
 				data := NewSQLInt()
 				cell.Data = data
 				cell.Type = CellInt
 				scanList = append(scanList, cell.CellTarget())
-			case "INT[]", "INT4[]", "INT8[]", "BIGINT[]":
+			case "INT[]", "INT4[]", "INT8[]", "BIGINT[]", "SMALLINT[]":
 				xx := NewSQLIntArray()
 
 				cell.Data = xx
@@ -125,15 +126,20 @@ func GetRaw(q string) (*Rows, error) {
 
 				cell.Data = xx
 				scanList = append(scanList, cell.CellTarget())
-			case "DATETIME":
+			case "DATETIME", "SMALLDATETIME":
 				data := NewSQLDatetime()
 				cell.Data = data
 				cell.Type = CellDatetime
 				scanList = append(scanList, cell.CellTarget())
-			case "DATETIME[]":
+			case "DATETIME[]", "SMALLDATETIME[]":
 				xx := NewSQLDatetimeArray()
 
 				cell.Data = xx
+				scanList = append(scanList, cell.CellTarget())
+			case "VARBINARY":
+				data := NewSQLByte()
+				cell.Data = data
+				cell.Type = CellString
 				scanList = append(scanList, cell.CellTarget())
 			default:
 				panic("field type not accounted for: " + c.DatabaseTypeName())
@@ -189,18 +195,51 @@ func init() {
 	}
 }
 
+func CreateTable(t *Table) error {
+	var b bytes.Buffer
+
+	err := tmpl.ExecuteTemplate(&b, "schema", t)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec(b.String())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func GetTrue() string {
+	switch mode {
+	case "postgres":
+		return "TRUE"
+	case "sqlite":
+		return "1"
+	}
+	return "TRUE"
+}
+
+func GetFalse() string {
+	switch mode {
+	case "postgres":
+		return "FALSE"
+	case "sqlite":
+		return "0"
+	}
+	return "TRUE"
+}
+
 // Bootstrap connects the db
-func Bootstrap(_db *sql.DB, tables []*Table) {
+func Bootstrap(_db *sql.DB, tables []*Table, _mode string) {
 	db = _db
+	mode = _mode
 
 	for _, table := range tables {
-		var b bytes.Buffer
-
-		tmpl.ExecuteTemplate(&b, "schema", table)
-
-		_, err := db.Exec(b.String())
+		err := CreateTable(table)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal("couldn't create database table")
 		}
 	}
 }
