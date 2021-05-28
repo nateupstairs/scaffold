@@ -1,6 +1,9 @@
 package scaffold
 
-import "time"
+import (
+	"errors"
+	"time"
+)
 
 // CellType for vague match against SQL types
 type CellType int
@@ -19,6 +22,8 @@ const (
 	CellDateArray
 	CellDatetime
 	CellDatetimeArray
+	CellByte
+	CellByteArray
 )
 
 // SQLCell explains that base properties of a cell
@@ -61,6 +66,20 @@ func (c *Cell) Bool() (bool, error) {
 	return vv, nil
 }
 
+// SetBool to cell
+func (c *Cell) SetBool(x bool) error {
+	if c.Type != CellBool {
+		return errors.New("set incorrect type")
+	}
+
+	d := NewSQLBool()
+	d.Scan(x)
+
+	c.Data = d
+
+	return nil
+}
+
 // BoolArray from cell
 func (c *Cell) BoolArray() ([]bool, error) {
 	v, err := c.GetValue()
@@ -89,6 +108,20 @@ func (c *Cell) String() (string, error) {
 	}
 
 	return vv, nil
+}
+
+// SetString to cell
+func (c *Cell) SetString(x string) error {
+	if c.Type != CellString {
+		return errors.New("set incorrect type")
+	}
+
+	d := NewSQLString()
+	d.Scan(x)
+
+	c.Data = d
+
+	return nil
 }
 
 // StringArray from cell
@@ -121,6 +154,20 @@ func (c *Cell) Int() (int64, error) {
 	return vv, nil
 }
 
+// SetInt to cell
+func (c *Cell) SetInt(x int64) error {
+	if c.Type != CellInt {
+		return errors.New("set incorrect type")
+	}
+
+	d := NewSQLInt()
+	d.Scan(x)
+
+	c.Data = d
+
+	return nil
+}
+
 // IntArray from cell
 func (c *Cell) IntArray() ([]int64, error) {
 	v, err := c.GetValue()
@@ -149,6 +196,20 @@ func (c *Cell) Float() (float64, error) {
 	}
 
 	return vv, nil
+}
+
+// SetFloat to cell
+func (c *Cell) SetFloat(x float64) error {
+	if c.Type != CellFloat {
+		return errors.New("set incorrect type")
+	}
+
+	d := NewSQLFloat()
+	d.Scan(x)
+
+	c.Data = d
+
+	return nil
 }
 
 // FloatArray from cell
@@ -181,6 +242,20 @@ func (c *Cell) Date() (time.Time, error) {
 	return vv, nil
 }
 
+// SetDate to cell
+func (c *Cell) SetDate(x time.Time) error {
+	if c.Type != CellDate {
+		return errors.New("set incorrect type")
+	}
+
+	d := NewSQLDate()
+	d.Scan(x)
+
+	c.Data = d
+
+	return nil
+}
+
 // DateArray from cell
 func (c *Cell) DateArray() ([]time.Time, error) {
 	v, err := c.GetValue()
@@ -209,6 +284,20 @@ func (c *Cell) Datetime() (time.Time, error) {
 	}
 
 	return vv, nil
+}
+
+// SetDatetime to cell
+func (c *Cell) SetDatetime(x time.Time) error {
+	if c.Type != CellDate {
+		return errors.New("set incorrect type")
+	}
+
+	d := NewSQLDatetime()
+	d.Scan(x)
+
+	c.Data = d
+
+	return nil
 }
 
 // DatetimeArray from cell
