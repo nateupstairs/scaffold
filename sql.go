@@ -58,6 +58,9 @@ values (
 		{{$ph}}
 	{{end}}
 )
+{{- if ne .returning ""}}
+RETURNING id
+{{ end -}}
 `
 const selectTemplate = `
 SELECT

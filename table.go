@@ -147,7 +147,7 @@ func (t *Table) GetRows(q Query) (*Rows, error) {
 }
 
 // Insert inserts into a table
-func (t *Table) Insert(row *Row) error {
+func (t *Table) Insert(row *Row, returning string) (int64, error) {
 	fields := make([]string, 0)
 	placeholders := make([]string, 0)
 
@@ -315,18 +315,21 @@ func (t *Table) Insert(row *Row) error {
 	}
 
 	templateVars["placeholders"] = placeholders
+	templateVars["returning"] = returning
 
 	var b bytes.Buffer
 
 	err := tmpl.ExecuteTemplate(&b, "insert", templateVars)
 	if err != nil {
-		return errors.New("Failure to execute template")
+		return 0, errors.New("Failure to execute template")
 	}
 
-	_, err = db.Exec(b.String(), rowData...)
+	var lastInsert int64
+
+	err = db.QueryRow(b.String(), rowData...).Scan(&lastInsert)
 	if err != nil {
-		return errors.New("Failure to execute query")
+		return 0, errors.New("Failure to execute query")
 	}
 
-	return nil
+	return lastInsert, nil
 }
