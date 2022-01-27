@@ -172,7 +172,7 @@ func (t *Table) Insert(row *Row, returning string) (int64, error) {
 		if ok {
 			if !c.Exclude {
 				switch c.Type {
-				case CellBool, CellString, CellInt, CellFloat, CellDate, CellDatetime:
+				case CellBool, CellString, CellInt, CellFloat, CellDate, CellDatetime, CellBytes:
 					value, err := c.GetValue()
 					if err != nil {
 						switch c.Type {
@@ -188,6 +188,8 @@ func (t *Table) Insert(row *Row, returning string) (int64, error) {
 							rowData = append(rowData, sql.NullTime{})
 						case CellDatetime:
 							rowData = append(rowData, sql.NullTime{})
+						case CellBytes:
+							rowData = append(rowData, sql.NullString{})
 						}
 						placeholders = append(placeholders, "$"+strconv.Itoa(placeholderCursor))
 					} else {

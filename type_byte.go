@@ -6,29 +6,29 @@ import (
 	"github.com/lib/pq"
 )
 
-// SQLString representation of SQL
-type SQLByte struct {
+// SQLBytes representation of SQL
+type SQLBytes struct {
 	Valid bool
 	Value []byte
 }
 
-// SQLStringArray representation of SQL
-type SQLByteArray struct {
+// SQLBytesArray representation of SQL
+type SQLBytesArray struct {
 	Valid bool
 	Value [][]byte
 }
 
 // NewSQLByte makes a SQLByte
-func NewSQLByte() *SQLByte {
-	x := new(SQLByte)
+func NewSQLBytes() *SQLBytes {
+	x := new(SQLBytes)
 	x.Valid = false
 
 	return x
 }
 
 // NewSQLByteArray makes a SQLByteArray
-func NewSQLByteArray() *SQLByteArray {
-	x := new(SQLByteArray)
+func NewSQLByteArray() *SQLBytesArray {
+	x := new(SQLBytesArray)
 	x.Valid = true
 	x.Value = make([][]byte, 0)
 
@@ -36,7 +36,7 @@ func NewSQLByteArray() *SQLByteArray {
 }
 
 // Raw Byte->Raw
-func (x *SQLByte) Raw() (interface{}, error) {
+func (x *SQLBytes) Raw() (interface{}, error) {
 	if !x.Valid {
 		return x.Value, errors.New("Invalid value")
 	}
@@ -44,8 +44,8 @@ func (x *SQLByte) Raw() (interface{}, error) {
 	return x.Value, nil
 }
 
-// Raw ByteArray->Raw
-func (x *SQLByteArray) Raw() (interface{}, error) {
+// Raw BytesArray->Raw
+func (x *SQLBytesArray) Raw() (interface{}, error) {
 	if !x.Valid {
 		return x.Value, errors.New("Invalid value")
 	}
@@ -54,17 +54,17 @@ func (x *SQLByteArray) Raw() (interface{}, error) {
 }
 
 // Target gets the scannable target for SQLByte
-func (x *SQLByte) Target() interface{} {
+func (x *SQLBytes) Target() interface{} {
 	return x
 }
 
 // Target gets the scannable target for SQLByteArray
-func (x *SQLByteArray) Target() interface{} {
+func (x *SQLBytesArray) Target() interface{} {
 	return pq.Array(&x.Value)
 }
 
 // Scan interface->Byte
-func (x *SQLByte) Scan(data interface{}) error {
+func (x *SQLBytes) Scan(data interface{}) error {
 	switch data.(type) {
 	case []byte:
 		v, ok := data.([]byte)

@@ -31,6 +31,11 @@ func (r *Row) AsJSON(cols []string) []byte {
 				if err == nil {
 					jsv, _ = sjson.SetBytes(jsv, cell.Name, v)
 				}
+			case CellBytes:
+				v, err := cell.Bytes()
+				if err == nil {
+					jsv, _ = sjson.SetRawBytes(jsv, cell.Name, v)
+				}
 			case CellDate:
 				v, err := cell.Date()
 				if err == nil {

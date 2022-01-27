@@ -136,10 +136,10 @@ func GetRaw(q string) (*Rows, error) {
 
 				cell.Data = xx
 				scanList = append(scanList, cell.CellTarget())
-			case "VARBINARY":
-				data := NewSQLByte()
+			case "JSONB":
+				data := NewSQLBytes()
 				cell.Data = data
-				cell.Type = CellString
+				cell.Type = CellBytes
 				scanList = append(scanList, cell.CellTarget())
 			default:
 				panic("field type not accounted for: " + c.DatabaseTypeName())

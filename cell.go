@@ -22,8 +22,9 @@ const (
 	CellDateArray
 	CellDatetime
 	CellDatetimeArray
-	CellByte
-	CellByteArray
+	CellBytes
+	CellBytesArray
+	CellJSON
 )
 
 // SQLCell explains that base properties of a cell
@@ -49,6 +50,35 @@ func (c *Cell) CellTarget() interface{} {
 // GetValue from cell
 func (c *Cell) GetValue() (interface{}, error) {
 	return c.Data.Raw()
+}
+
+// Bytes from cell
+func (c *Cell) Bytes() ([]byte, error) {
+	v, err := c.GetValue()
+	if err != nil {
+		return []byte(""), err
+	}
+
+	vv, ok := v.([]byte)
+	if !ok {
+		return []byte(""), err
+	}
+
+	return vv, nil
+}
+
+// SetBytes to cell
+func (c *Cell) SetBytes(x []byte) error {
+	if c.Type != CellBytes {
+		return errors.New("set incorrect type")
+	}
+
+	d := NewSQLBytes()
+	d.Scan(x)
+
+	c.Data = d
+
+	return nil
 }
 
 // Bool from cell
